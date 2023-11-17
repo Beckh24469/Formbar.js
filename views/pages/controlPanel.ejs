@@ -85,7 +85,10 @@
 						Polls</button>
 				</div>
 				<div id="previousPolls">
-
+					<button id="toPolls" type="button" onclick="toPolls()">Return to polls</button>
+					<button id="toPollHistory" type="button" onclick="displayPoll()">Return To
+						Selection</button>
+					<div id="previousPollButtons"></div>
 				</div>
 				<div id="lessonMaker">
 					<form method="post" enctype="multipart/form-data">
@@ -207,11 +210,16 @@
 			var lessonMaker = document.getElementById('lessonMaker')
 			var pluginsDiv = document.getElementById('plugins')
 			var previousPolls = document.getElementById('previousPolls')
+			var previousPollButtons = document.getElementById('previousPollButtons')
+			var toPollsButton = document.getElementById('toPolls')
+			var toPollHistoryButton = document.getElementById('toPollHistory')
 			var classCode = document.getElementById('classCode')
 			var menuUsers = document.getElementById('menuUsers')
 			var menuPolls = document.getElementById('menuPolls')
 			var menuLesson = document.getElementById('menuLesson')
 			var menuPlugins = document.getElementById('menuPlugins')
+
+			let currentUser = JSON.parse('<%- currentUser %>')
 
 			function HSLToHex(hue, saturation, lightness) {
 				// Normalize lightness to range 0-1
@@ -375,31 +383,79 @@
 				lessonMaker.style.display = 'none'
 				previousPolls.style.display = 'block'
 				pluginsDiv.style.display = 'none'
+				displayPoll()
 			}
+
 			//makes the previous polls page
 			function buildPreviousPolls(data) {
-				previousPolls.innerHTML = ''
-				for (let i = data.length - 1; i >= 0; i--) {
-					previousPolls.innerHTML += `<button type="button" onclick="displayPoll(${data[i].id})" class="quickButton">${data[i].date}</button>` + '</br>'
-				}
+				previousPollButtons.innerHTML = ''
+				let br = document.createElement('br')
 
+				for (let pollIndex = data.length - 1; pollIndex >= 0; pollIndex--) {
+					let pollButton = document.createElement('button')
+					pollButton.type = "button"
+					pollButton.className = 'quickButton'
+					pollButton.innerText = data[pollIndex].date + ' ' + data[pollIndex].data.prompt
+					pollButton.onclick = (event) => {
+						event.preventDefault()
+						displayPoll(data[pollIndex].id)
+					}
+					previousPollButtons.appendChild(pollButton)
+
+					previousPollButtons.appendChild(br.cloneNode(true))
+
+
+					let previousPollDiv = document.createElement('div')
+					previousPollDiv.className = 'previousPoll'
+					previousPollDiv.id = data[pollIndex].id
+					previousPollDiv.style.display = 'none'
+
+					let previousPollPrompt = document.createElement('p')
+					previousPollPrompt.innerText = `Prompt: ${data[pollIndex].data.prompt}`
+					previousPollDiv.appendChild(previousPollPrompt)
+
+					for (let userIndex = 0; userIndex < data[pollIndex].data.names.length; userIndex++) {
+						let username = document.createElement('p')
+						username.innerText = `Name: ${data[pollIndex].data.names[userIndex]}`
+						previousPollDiv.appendChild(username)
+
+						let letter = document.createElement('p')
+						letter.innerText = `Letter: ${data[pollIndex].data.letter[userIndex]}`
+						previousPollDiv.appendChild(letter)
+
+						let text = document.createElement('p')
+						text.innerText = `Text: ${data[pollIndex].data.text[userIndex]}`
+						previousPollDiv.appendChild(text)
+					}
+					previousPolls.appendChild(previousPollDiv)
+				}
 			}
 
-			function displayPoll(data) {
-				socket.emit('previousPollDisplay', data)
-			}
+			function displayPoll(id) {
+				if (id) {
+					let previousPollDivs = document.getElementsByClassName('previousPoll')
 
-			socket.on('previousPollData', (data) => {
-				previousPolls.innerHTML = 'Prompt: ' + data.prompt + '</br>'
+					previousPollButtons.style.display = 'none'
+					toPollsButton.style.display = 'none'
+					toPollHistoryButton.style.display = ''
 
-				for (let i = 0; i < data.names.length; i++) {
-					previousPolls.innerHTML += 'Name: ' + data.names[i] + '</br>'
-					previousPolls.innerHTML += 'Letter: ' + data.letter[i] + '</br>'
-					previousPolls.innerHTML += 'Text: ' + data.text[i] + '</br></br>'
+					for (let pollDiv of previousPollDivs) {
+						if (pollDiv.id == id)
+							pollDiv.style.display = 'block'
+						else
+							pollDiv.style.display = 'none'
+					}
+				} else {
+					let previousPollDivs = document.getElementsByClassName('previousPoll')
+					previousPollButtons.style.display = 'block'
+					toPollsButton.style.display = ''
+					toPollHistoryButton.style.display = 'none'
+
+					for (let pollDiv of previousPollDivs) {
+						pollDiv.style.display = 'none'
+					}
 				}
-
-				previousPolls.innerHTML += `<button type="button" onclick="socket.emit('cpUpdate')">Return To Selection</button>`
-			})
+			}
 
 			// Starts a new poll that allows students to submit answers
 			// Check how many possible responses and if the teacher wants to accept text responses
@@ -443,10 +499,12 @@
 
 				generatedColors = generateColors(resNumber.value)
 				if (pollResponses.length > resNumber.value) {
+
 					let responseDivs = document.getElementsByClassName('response')
 					for (let i = resNumber.value; i < pollResponses.length; i++) {
-						responseDivs[i].remove()
+						document.getElementById(`response${i}`).remove()
 					}
+
 					pollResponses.splice(resNumber.value)
 				}
 
@@ -462,6 +520,7 @@
 
 					let responseDiv = document.createElement('div')
 					responseDiv.className = 'response'
+					responseDiv.id = `response${i}`
 					let colorPickerButton = document.createElement('button')
 					colorPickerButton.className = 'colorPickerButton'
 					colorPickerButton.id = i
@@ -541,7 +600,7 @@
 					let answerName = document.createElement('input')
 					answerName.type = 'text'
 					answerName.name = 'answerName'
-					answerName.placeholder = `Answer ${String.fromCharCode(i + 97)}`
+					answerName.placeholder = `Answer ${String.fromCharCode(i + 97)} `
 					answerName.value = ''
 					answerName.onchange = (event) => {
 						pollResponses[i].answer = event.target.value;
@@ -684,16 +743,16 @@
 					breakNeeded.innerText = "Needs a break";
 					breakDiv.appendChild(breakNeeded);
 					let breakReason = document.createElement("p");
-					breakReason.innerText = `Reason: ${studentData.break}`;
+					breakReason.innerText = `Reason: ${studentData.break} `;
 					breakDiv.appendChild(breakReason);
 					let breakApprove = document.createElement("button");
 					breakApprove.classList.add("quickButton");
-					breakApprove.onclick = approveBreak(true, studentData.username);
+					breakApprove.onclick = ()=> {approveBreak(true, studentData.username)};
 					breakApprove.innerText = "Approve";
 					breakDiv.appendChild(breakApprove);
 					let breakDeny = document.createElement("button");
 					breakDeny.classList.add("quickButton");
-					breakApprove.onclick = approveBreak(false, studentData.username);
+					breakDeny.onclick = () => {approveBreak(false, studentData.username)};
 					breakDeny.innerText = "Deny";
 					breakDiv.appendChild(breakDeny);
 					newStudent.appendChild(breakDiv);
@@ -706,11 +765,11 @@
 					help.innerText = "sent help ticket";
 					if (studentData.help.reason) {
 						let helpReason = document.createElement("p");
-						helpReason.innerText = `reason ${studentData.help.reason}`;
+						helpReason.innerText = `reason ${studentData.help.reason} `;
 						help.appendChild(helpReason);
 					};
 					let helpTimeDisplay = document.createElement("p");
-					helpTimeDisplay.innerText = `at ${studentData.help.time.hours}:${studentData.help.time.minutes}:${studentData.help.time.seconds}`;
+					helpTimeDisplay.innerText = `at ${studentData.help.time.hours}:${studentData.help.time.minutes}:${studentData.help.time.seconds} `;
 					help.appendChild(helpTimeDisplay);
 					let deleteTicketButton = document.createElement("button");
 					deleteTicketButton.classList.add("quickButton");
@@ -726,12 +785,12 @@
 				}
 				if (studentData.pollTextRes) {
 					let pollTextResponse = document.createElement("p");
-					pollTextResponse.innerText = `Poll Text: ${studentData.pollRes.textRes}`;
+					pollTextResponse.innerText = `Poll Text: ${studentData.pollRes.textRes} `;
 					newStudent.appendChild(pollTextResponse);
 				};
 				if (studentData.pollRes.buttonRes) {
 					let pollResponse = document.createElement("p");
-					pollResponse.innerText = `Poll: ${studentData.pollRes.buttonRes}`;
+					pollResponse.innerText = `Poll: ${studentData.pollRes.buttonRes} `;
 					newStudent.appendChild(pollResponse);
 				};
 				if (studentData.pollRes.textRes) {
@@ -739,87 +798,89 @@
 					textResponse.innerText = `Text Response: ${studentData.pollRes.textRes}`;
 					newStudent.appendChild(textResponse);
 				};
-				let permissionSwitch = document.createElement("select");
-				permissionSwitch.setAttribute("name", "permSwitch");
-				permissionSwitch.setAttribute("class", "permSwitch");
-				permissionSwitch.setAttribute("data-userid", student);
-				permissionSwitch.onchange = (event) => {
-					socket.emit('classPermChange', event.target.dataset.userid, event.target.value)
-				};
-				if (studentData.classPermissions == 4) {
-					let teacherOption = document.createElement("option");
-					teacherOption.setAttribute("value", 4);
-					teacherOption.setAttribute("selected", true);
-					teacherOption.innerText = "Teacher";
-					permissionSwitch.add(teacherOption);
-					let modOption = document.createElement("option");
-					modOption.setAttribute("value", 3);
-					modOption.innerText = "Mod";
-					permissionSwitch.add(modOption);
-					let studentOption = document.createElement("option");
-					studentOption.setAttribute("value", 2);
-					studentOption.innerText = "Student";
-					permissionSwitch.add(studentOption);
-					let guestOption = document.createElement("option");
-					guestOption.setAttribute("value", 1);
-					guestOption.innerText = "Guest";
-					permissionSwitch.add(guestOption);
-				} else if (studentData.classPermissions == 3) {
-					let teacherOption = document.createElement("option");
-					teacherOption.setAttribute("value", 4);
-					teacherOption.innerText = "Teacher";
-					permissionSwitch.add(teacherOption);
-					let modOption = document.createElement("option");
-					modOption.setAttribute("value", 3);
-					modOption.setAttribute("selected", true);
-					modOption.innerText = "Mod";
-					permissionSwitch.add(modOption);
-					let studentOption = document.createElement("option");
-					studentOption.setAttribute("value", 2);
-					studentOption.innerText = "Student";
-					permissionSwitch.add(studentOption);
-					let guestOption = document.createElement("option");
-					guestOption.setAttribute("value", 1);
-					guestOption.innerText = "Guest";
-					permissionSwitch.add(guestOption);
-				} else if (studentData.permissions == 2) {
-					let teacherOption = document.createElement("option");
-					teacherOption.setAttribute("value", 4);
-					teacherOption.innerText = "Teacher";
-					permissionSwitch.add(teacherOption);
-					let modOption = document.createElement("option");
-					modOption.setAttribute("value", 3);
-					modOption.innerText = "Mod";
-					permissionSwitch.add(modOption);
-					let studentOption = document.createElement("option");
-					studentOption.setAttribute("value", 2);
-					studentOption.setAttribute("selected", true);
-					studentOption.innerText = "Student";
-					permissionSwitch.add(studentOption);
-					let guestOption = document.createElement("option");
-					guestOption.setAttribute("value", 1);
-					guestOption.innerText = "Guest";
-					permissionSwitch.add(guestOption);
-				} else if (studentData.classPermissions == 1) {
-					let teacherOption = document.createElement("option");
-					teacherOption.setAttribute("value", 4);
-					teacherOption.innerText = "Teacher";
-					permissionSwitch.add(teacherOption);
-					let modOption = document.createElement("option");
-					modOption.setAttribute("value", 3);
-					modOption.innerText = "Mod";
-					permissionSwitch.add(modOption);
-					let studentOption = document.createElement("option");
-					studentOption.setAttribute("value", 2);
-					studentOption.innerText = "Student";
-					permissionSwitch.add(modOption);
-					let guestOption = document.createElement("option");
-					guestOption.setAttribute("value", 1);
-					guestOption.setAttribute("selected", true);
-					guestOption.innerText = "Guest";
-					permissionSwitch.add(guestOption);
+				if (studentData.classPermissions < currentUser.classPermissions) {
+					let permissionSwitch = document.createElement("select");
+					permissionSwitch.setAttribute("name", "permSwitch");
+					permissionSwitch.setAttribute("class", "permSwitch");
+					permissionSwitch.setAttribute("data-userid", student);
+					permissionSwitch.onchange = (event) => {
+						socket.emit('classPermChange', event.target.dataset.userid, event.target.value)
+					};
+					if (studentData.classPermissions == 4) {
+						let teacherOption = document.createElement("option");
+						teacherOption.setAttribute("value", 4);
+						teacherOption.setAttribute("selected", true);
+						teacherOption.innerText = "Teacher";
+						permissionSwitch.add(teacherOption);
+						let modOption = document.createElement("option");
+						modOption.setAttribute("value", 3);
+						modOption.innerText = "Mod";
+						permissionSwitch.add(modOption);
+						let studentOption = document.createElement("option");
+						studentOption.setAttribute("value", 2);
+						studentOption.innerText = "Student";
+						permissionSwitch.add(studentOption);
+						let guestOption = document.createElement("option");
+						guestOption.setAttribute("value", 1);
+						guestOption.innerText = "Guest";
+						permissionSwitch.add(guestOption);
+					} else if (studentData.classPermissions == 3) {
+						let teacherOption = document.createElement("option");
+						teacherOption.setAttribute("value", 4);
+						teacherOption.innerText = "Teacher";
+						permissionSwitch.add(teacherOption);
+						let modOption = document.createElement("option");
+						modOption.setAttribute("value", 3);
+						modOption.setAttribute("selected", true);
+						modOption.innerText = "Mod";
+						permissionSwitch.add(modOption);
+						let studentOption = document.createElement("option");
+						studentOption.setAttribute("value", 2);
+						studentOption.innerText = "Student";
+						permissionSwitch.add(studentOption);
+						let guestOption = document.createElement("option");
+						guestOption.setAttribute("value", 1);
+						guestOption.innerText = "Guest";
+						permissionSwitch.add(guestOption);
+					} else if (studentData.classPermissions == 2) {
+						let teacherOption = document.createElement("option");
+						teacherOption.setAttribute("value", 4);
+						teacherOption.innerText = "Teacher";
+						permissionSwitch.add(teacherOption);
+						let modOption = document.createElement("option");
+						modOption.setAttribute("value", 3);
+						modOption.innerText = "Mod";
+						permissionSwitch.add(modOption);
+						let studentOption = document.createElement("option");
+						studentOption.setAttribute("value", 2);
+						studentOption.setAttribute("selected", true);
+						studentOption.innerText = "Student";
+						permissionSwitch.add(studentOption);
+						let guestOption = document.createElement("option");
+						guestOption.setAttribute("value", 1);
+						guestOption.innerText = "Guest";
+						permissionSwitch.add(guestOption);
+					} else if (studentData.classPermissions == 1) {
+						let teacherOption = document.createElement("option");
+						teacherOption.setAttribute("value", 4);
+						teacherOption.innerText = "Teacher";
+						permissionSwitch.add(teacherOption);
+						let modOption = document.createElement("option");
+						modOption.setAttribute("value", 3);
+						modOption.innerText = "Mod";
+						permissionSwitch.add(modOption);
+						let studentOption = document.createElement("option");
+						studentOption.setAttribute("value", 2);
+						studentOption.innerText = "Student";
+						permissionSwitch.add(studentOption);
+						let guestOption = document.createElement("option");
+						guestOption.setAttribute("value", 1);
+						guestOption.setAttribute("selected", true);
+						guestOption.innerText = "Guest";
+						permissionSwitch.add(guestOption);
+					}
+					newStudent.appendChild(permissionSwitch);
 				}
-				newStudent.appendChild(permissionSwitch);
 				newStudent.append(" ");
 				let deleteStudentButton = document.createElement("button");
 				deleteStudentButton.className = 'deleteStudent quickButton'
@@ -1057,7 +1118,11 @@
 			socket.on('cpUpdate', function (room, pollHistory) {
 				room = JSON.parse(room)
 				classCode.innerText = 'Class Code: ' + room.key
-				buildPreviousPolls(JSON.parse(pollHistory))
+				pollHistory = JSON.parse(pollHistory)
+				for (let poll of pollHistory) {
+					poll.data = JSON.parse(poll.data)
+				}
+				buildPreviousPolls(pollHistory)
 				allRoom = room
 				document.getElementById('nextStep').onclick = () => {
 					doStep(allRoom.currentStep)
@@ -1065,6 +1130,7 @@
 				}
 				filterSortChange()
 			})
+
 			socket.emit('pluginUpdate')
 			socket.on('pluginUpdate', (plugins) => {
 				pluginsDiv.innerHTML = ''
