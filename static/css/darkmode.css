@@ -1,5 +1,7 @@
 /* --- GENERAL --- */
 
+/* Defines the "Dark Mode" that is displayed when the LM/DM button is clicked */
+
 :root {
 	/*All pages can use this set of colors*/
 
@@ -39,57 +41,75 @@
 	--bg-light-blue: #def;
 }
 
+/* Set the background color of the body to a dark color and the text color to white */
 body {
 	background-color: #323232;
 	color: #ffffff;
 }
 
+/* Set the color of all headings to white */
 h1, h2, h3, h4, h5, h6 {
 	color: var(--color-white);
 }
 
+/* Set the color of header text to light cyan */
 h1.headertext, h2.headertext {
 	color: var(--light-cyan);
 }
 
+/* Set the color of the noPoll header text to light cyan */
 h1#noPoll.textColorContent {
 	color: var(--light-cyan);
 }
 
+/* Set the color of paragraph text to white */
 p {
 	color: var(--color-white);
 }
 
+/* Set the background color of input fields to a dark color and the text color to white */
 input {
 	background-color: #323232;
 	color: #ffffff;
 }
 
+/* Set the background color of the select element to a dark color and the text color to white */
 #select {
 	background-color: #323232;
 	color: #ffffff;
 }
 
+/* Set the background color of the colorContent element to a dark color and the text color to white */
 #colorContent {
 	background-color: #323232;
 	color: #ffffff;
 }
 
+/* Set the background color of the content element to white and the text color to black */
 #content {
 	background-color: var(#ffffff);
 	color: #000000;
 }
 
+/* Set the background color of the usernameBox, passwordBox, displayNameBox, joinKey elements to white and the text color to black */
 #usernameBox, #passwordBox, #displayNameBox, #joinKey {
 	background-color: #ffffff;
 	color: #000000;
 }
 
+/* Set the background color of the resTextBox element to white and the text color to black */
 #resTextBox {
 	background-color: #ffffff;
 	color: #000000;
 }
 
+/* Set the text color of select elements to white */
 select {
 	color: #ffffff;
+}
+
+/* Set the background color of the joinedKey select element to white and the text color to black */
+select#joinedKey {
+	background-color: #ffffff;
+	color: #000000;
 }

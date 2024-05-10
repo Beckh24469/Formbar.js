@@ -1,5 +1,7 @@
 /* --- GENERAL --- */
 
+/* Defines the "Light Mode" that is displayed when the LM/DM button is clicked */
+
 :root {
 	/*All pages can use this set of colors*/
 
@@ -39,15 +41,18 @@
 	--bg-light-blue: #def;
 }
 
+/* Set the background color of the body to white and the text color to black */
 body {
 	background-color: white;
 	color: #000;
 }
 
+/* Set the color of all headings to black */
 h1, h2, h3, h4, h5, h6 {
 	color: var(--color-black);
 }
 
+/* Set the color of paragraph text to black */
 p {
 	color: var(--color-black);
 }
